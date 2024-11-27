@@ -9,7 +9,7 @@ using System.Collections.Generic;
 namespace Oxide.Plugins
 {
     [Info("Unarmed Parachuting", "VisEntities", "1.0.0")]
-    [Description(" ")]
+    [Description("Prevents players from equipping items while parachuting.")]
     public class UnarmedParachuting : RustPlugin
     {
         #region Fields
