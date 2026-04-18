@@ -4,19 +4,61 @@
  * Full legal terms can be found at https://game4freak.io/eula/
  */
 
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
-    [Info("Unarmed Parachuting", "VisEntities", "1.0.0")]
+    [Info("Unarmed Parachuting", "VisEntities", "1.1.0")]
     [Description("Prevents players from equipping items while parachuting.")]
     public class UnarmedParachuting : RustPlugin
     {
         #region Fields
 
         private static UnarmedParachuting _plugin;
+        private static Configuration _config;
 
         #endregion Fields
+
+        #region Configuration
+
+        private class Configuration
+        {
+            [JsonProperty("Version")]
+            public string Version { get; set; }
+
+            [JsonProperty("Drop Items On Ground Instead Of Moving To Inventory")]
+            public bool DropItemsOnGround { get; set; }
+        }
+
+        protected override void LoadConfig()
+        {
+            base.LoadConfig();
+            _config = Config.ReadObject<Configuration>();
+
+            if (_config.Version != Version.ToString())
+            {
+                PrintWarning("Configuration appears to be outdated; updating and saving");
+                _config.Version = Version.ToString();
+                SaveConfig();
+            }
+        }
+
+        protected override void LoadDefaultConfig()
+        {
+            _config = new Configuration
+            {
+                Version = Version.ToString(),
+                DropItemsOnGround = false,
+            };
+        }
+
+        protected override void SaveConfig()
+        {
+            Config.WriteObject(_config, true);
+        }
+
+        #endregion Configuration
 
         #region Oxide Hooks
 
@@ -28,6 +70,7 @@ namespace Oxide.Plugins
 
         private void Unload()
         {
+            _config = null;
             _plugin = null;
         }
 
@@ -73,7 +116,11 @@ namespace Oxide.Plugins
 
             ServerMgr.Instance.Invoke(() =>
             {
-                if (!activeItem.MoveToContainer(player.inventory.containerBelt, slot)
+                if (_config.DropItemsOnGround)
+                {
+                    activeItem.DropAndTossUpwards(playerPosition);
+                }
+                else if (!activeItem.MoveToContainer(player.inventory.containerBelt, slot)
                     && !player.inventory.GiveItem(activeItem))
                 {
                     activeItem.DropAndTossUpwards(playerPosition);
